@@ -1,0 +1,25 @@
+[package]
+name = "countdown-metrics-rs"
+version = "1.0.0"
+edition = "2021"
+description = "A daemon that publishes the number of seconds until a given date to a statsd sink."
+authors = ["Nick Gerakines <nick.gerakines@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/ngerakines/countdown-metrics-rs"
+homepage = "https://github.com/ngerakines/countdown-metrics-rs"
+license = "MIT"
+publish = true
+
+[dependencies]
+anyhow = { version = "1.0.66", features = ["backtrace"] }
+derive_builder = "0.12.0"
+tracing = { version = "0.1", features = ["log"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tokio = { version = "1", features = ["full"] }
+chrono = {version = "0.4.24",  default-features = false, features = ["clock"]}
+cadence = "0.29.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"

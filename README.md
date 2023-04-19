@@ -6,7 +6,7 @@ A daemon that publishes the number of seconds until a given date to a statsd sin
 
 The daemon is configured via environment variables:
 
-* `ENV_PREFIX`: The prefix for environment variables. Defaults to `COUNTDOWN_`.
+* `ENV_PREFIX`: The prefix for environment variables. Defaults to `COUNTDOWNS_`.
 * `INTERVAL`: The number of seconds between publishing metrics. Defaults to `10`.
 * `STATSD_HOST`: The host to publish metrics to. Defaults to `127.0.0.1:8125`.
 * `METRIC_PREFIX`: The prefix to use for metrics. Blank by default.
@@ -35,7 +35,7 @@ First start a fake statsd sink:
 
 Then run the daemon with an example metric:
 
-    $ COUNTDOWN_FOO="2024-01-01T14:00:00-04:00" cargo run
+    $ COUNTDOWNS_FOO="2024-01-01T14:00:00-04:00" cargo run
 
 You'll see metrics published with the default values:
 
@@ -76,9 +76,9 @@ spec:
         - name: app
           image: ngerakines/countdown-metrics:latest
           env:
-            - name: COUNTDOWN_SITE_CERT
+            - name: COUNTDOWNS_SITE_CERT
               value: "2024-01-01T14:00:00-04:00"
-            - name: COUNTDOWN_TS_KEY_DC1
+            - name: COUNTDOWNS_TS_KEY_DC1
               value: "2024-02-01T14:00:00-04:00"
 ```
 

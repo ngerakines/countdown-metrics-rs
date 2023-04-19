@@ -29,7 +29,7 @@ pub struct Config {
 
 impl ConfigBuilder {
     fn default_env_prefix(&self) -> String {
-        env::var("ENV_PREFIX").unwrap_or("COUNTDOWN_".to_string())
+        env::var("ENV_PREFIX").unwrap_or("COUNTDOWNS_".to_string())
     }
 
     fn default_interval(&self) -> u16 {

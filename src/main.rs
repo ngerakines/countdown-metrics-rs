@@ -4,7 +4,11 @@ use std::collections::HashMap;
 use std::{borrow::BorrowMut, env};
 use tokio::signal;
 use tokio::sync::broadcast::Receiver;
-use tracing::{error, trace, warn};
+use tracing::{error, info, trace};
+
+#[cfg(debug_assertions)]
+use tracing::warn;
+
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod config;
@@ -94,5 +98,5 @@ async fn shutdown_signal(rx: &mut Receiver<bool>) {
         _ = rx.recv() => {},
     }
 
-    println!("signal received, starting graceful shutdown");
+    info!("signal received, starting graceful shutdown");
 }

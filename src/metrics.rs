@@ -37,9 +37,6 @@ pub async fn metric_loop(
     let sleeper = sleep(interval);
     tokio::pin!(sleeper);
 
-    let metric = &config.metric_name;
-    let heartbeat_metric = &config.heartbeat_metric;
-
     'outer: loop {
         tokio::select! {
             _ = rx.recv() => {
@@ -49,16 +46,21 @@ pub async fn metric_loop(
                 let now = Utc::now();
                 for (key, value) in &keys {
                     if now > *value {
-                        info!("Key {} expired", key);
+                        info!("Countdown expired: {key}");
+
+                        if let Err(err) = client.gauge_with_tags(&config.countdown_key, 0).with_tag(&config.countdown_id, key).try_send() {
+                            error!(cause = ?err, "Error sending metric");
+                        }
+
                         continue
                     }
                     let remaining = (*value - now).num_seconds();
-                    if let Err(err) = client.gauge_with_tags(metric, remaining as u64).with_tag("name", key).try_send() {
+                    if let Err(err) = client.gauge_with_tags(&config.countdown_key, remaining as u64).with_tag(&config.countdown_id, key).try_send() {
                         error!(cause = ?err, "Error sending metric");
                     }
                 }
 
-                if let Err(err) = client.gauge(heartbeat_metric, now.timestamp() as u64) {
+                if let Err(err) = client.gauge(&config.heartbeat_metric, now.timestamp() as u64) {
                     error!(cause = ?err, "Error sending heartbeat metric");
                 }
 

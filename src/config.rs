@@ -14,8 +14,11 @@ pub struct Config {
     #[builder(setter(into), default = "self.default_metric_prefix()")]
     pub metric_prefix: String,
 
-    #[builder(setter(into), default = "self.default_metric_name()")]
-    pub metric_name: String,
+    #[builder(setter(into), default = "self.default_countdown_key()")]
+    pub countdown_key: String,
+
+    #[builder(setter(into), default = "self.default_countdown_id()")]
+    pub countdown_id: String,
 
     #[builder(setter(into), default = "self.default_heartbeat_metric()")]
     pub heartbeat_metric: String,
@@ -26,7 +29,7 @@ pub struct Config {
 
 impl ConfigBuilder {
     fn default_env_prefix(&self) -> String {
-        env::var("ENV_PREFIX").unwrap_or("WATCH_KEY_".to_string())
+        env::var("ENV_PREFIX").unwrap_or("COUNTDOWN_".to_string())
     }
 
     fn default_interval(&self) -> u16 {
@@ -40,8 +43,12 @@ impl ConfigBuilder {
         env::var("METRIC_PREFIX").unwrap_or("".to_string())
     }
 
-    fn default_metric_name(&self) -> String {
-        env::var("METRIC_NAME").unwrap_or("key_expire".to_string())
+    fn default_countdown_key(&self) -> String {
+        env::var("COUNTDOWN_KEY").unwrap_or("countdown".to_string())
+    }
+
+    fn default_countdown_id(&self) -> String {
+        env::var("COUNTDOWN_ID").unwrap_or("name".to_string())
     }
 
     fn default_heartbeat_metric(&self) -> String {

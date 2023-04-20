@@ -10,6 +10,7 @@ The daemon is configured via environment variables:
 * `INTERVAL`: The number of seconds between publishing metrics. Defaults to `10`.
 * `STATSD_HOST`: The host to publish metrics to. Defaults to `127.0.0.1:8125`.
 * `METRIC_PREFIX`: The prefix to use for metrics. Blank by default.
+* `METRIC_TAGS`: A comma separated list of tags to add to all metrics. Blank by default.
 * `COUNTDOWN_KEY`: The name of the countdown metric. Defaults to `countdown`.
 * `COUNTDOWN_ID`: The name of the countdown metric tag. Defaults to `name`.
 * `HEARTBEAT_METRIC`: The name of the heartbeat metric. Defaults to `heartbeat`.
@@ -48,6 +49,19 @@ countdown:22192867|g|#name:foo
 heatbeat:1681939132|g
 ```
 
+## Global Tags
+
+When running:
+
+    $ METRIC_TAGS="DD_SERVICE=cntdwn,DD_VERSION=1.2.0" COUNTDOWNS_FOO="2024-01-01T14:00:00-04:00" cargo run
+
+You'll get:
+
+```
+countdown:22132947|g|#DD_SERVICE:cntdwn,DD_VERSION:1.2.0,name:foo
+heatbeat:1681999052|g|#DD_SERVICE:cntdwn,DD_VERSION:1.2.0
+```
+
 # Usage
 
 Use this to monitor your stuff.
@@ -74,7 +88,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: ngerakines/countdown-metrics:latest
+          image: ngerakines/countdown-metrics:v1.2.0
           env:
             - name: COUNTDOWNS_SITE_CERT
               value: "2024-01-01T14:00:00-04:00"

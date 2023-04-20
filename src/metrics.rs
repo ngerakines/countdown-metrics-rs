@@ -30,7 +30,17 @@ pub async fn metric_loop(
         .next()
         .ok_or_else(|| anyhow::anyhow!("Unable to resolve statsd sink {}", config.statsd_sink))?;
     let udp_sink = BufferedUdpMetricSink::from(host, socket)?;
-    let client = StatsdClient::from_sink(&config.metric_prefix, udp_sink);
+
+    let client = match config.metric_tags.len() {
+        0 => StatsdClient::from_sink(&config.metric_prefix, udp_sink),
+        _ => {
+            let mut client = StatsdClient::builder(&config.metric_prefix, udp_sink);
+            for (key, value) in &config.metric_tags {
+                client = client.with_tag(key, value);
+            }
+            client.build()
+        }
+    };
 
     let interval = Duration::seconds(config.interval as i64).to_std()?;
 
@@ -45,6 +55,7 @@ pub async fn metric_loop(
             () = &mut sleeper => {
                 let now = Utc::now();
                 for (key, value) in &keys {
+                    trace!("Preparing {key} {value}");
                     if now > *value {
                         info!("Countdown expired: {key}");
 

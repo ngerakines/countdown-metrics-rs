@@ -1,4 +1,4 @@
-use std::env;
+use std::{collections::HashMap, env};
 
 use derive_builder::Builder;
 
@@ -25,6 +25,9 @@ pub struct Config {
 
     #[builder(setter(into), default = "self.default_statsd_sink()")]
     pub statsd_sink: String,
+
+    #[builder(setter(into), default = "self.default_metric_tags()")]
+    pub metric_tags: HashMap<String, String>,
 }
 
 impl ConfigBuilder {
@@ -57,5 +60,19 @@ impl ConfigBuilder {
 
     fn default_statsd_sink(&self) -> String {
         env::var("STATSD_SINK").unwrap_or("127.0.0.1:8125".to_string())
+    }
+
+    fn default_metric_tags(&self) -> HashMap<String, String> {
+        let mut tags = HashMap::new();
+        env::var("METRIC_TAGS")
+            .unwrap_or("".to_string())
+            .split(',')
+            .for_each(|tag| {
+                let values: Vec<&str> = tag.split('=').collect();
+                if values.len() == 2 {
+                    tags.insert(values[0].to_string(), values[1].to_string());
+                }
+            });
+        tags
     }
 }

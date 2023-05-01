@@ -11,7 +11,7 @@ license = "MIT"
 publish = true
 
 [dependencies]
-anyhow = { version = "1.0.66" }
+anyhow = { version = "1.0.71" }
 derive_builder = "0.12.0"
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }

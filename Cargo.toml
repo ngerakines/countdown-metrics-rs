@@ -11,13 +11,13 @@ license = "MIT"
 publish = true
 
 [dependencies]
-anyhow = { version = "1.0.71" }
-derive_builder = "0.12.0"
+anyhow = { version = "1.0.82" }
+derive_builder = "0.20.0"
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tokio = { version = "1", features = ["full"] }
-chrono = {version = "0.4.24",  default-features = false, features = ["clock"]}
-cadence = "0.29.0"
+chrono = {version = "0.4.37",  default-features = false, features = ["clock"]}
+cadence = "1.3.0"
 
 [profile.release]
 lto = true

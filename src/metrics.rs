@@ -6,10 +6,8 @@ use std::{
 use anyhow::Result;
 use cadence::{BufferedUdpMetricSink, Gauged, StatsdClient};
 use chrono::{DateTime, Duration, Utc};
-use tokio::{
-    sync::broadcast::Receiver,
-    time::{sleep, Instant},
-};
+use tokio::time::{sleep, Instant};
+use tokio_util::sync::CancellationToken;
 use tracing::{error, info, trace};
 
 use crate::config::Config;
@@ -17,7 +15,7 @@ use crate::config::Config;
 pub async fn metric_loop(
     config: Config,
     keys: HashMap<String, DateTime<Utc>>,
-    rx: &mut Receiver<bool>,
+    cancellation_token: &CancellationToken,
 ) -> Result<()> {
     trace!("metric_loop started");
 
@@ -49,7 +47,7 @@ pub async fn metric_loop(
 
     'outer: loop {
         tokio::select! {
-            _ = rx.recv() => {
+            _ = cancellation_token.cancelled() => {
                 break 'outer;
             },
             () = &mut sleeper => {

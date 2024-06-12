@@ -1,10 +1,10 @@
 use anyhow::{anyhow, Error, Result};
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
-use std::{borrow::BorrowMut, env};
+use std::env;
 use tokio::signal;
-use tokio::sync::broadcast::Receiver;
-use tracing::{error, info, trace};
+use tokio_util::sync::CancellationToken;
+use tracing::{debug, error, info};
 
 #[cfg(debug_assertions)]
 use tracing::warn;
@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().or_else(|_| {
-                tracing_subscriber::EnvFilter::try_new("key_expire_metrics_rs=trace,warning")
+                tracing_subscriber::EnvFilter::try_new("key_expire_metrics_rs=info,warning")
             })?,
         )
         .with(tracing_subscriber::fmt::layer().json())
@@ -36,45 +36,47 @@ async fn main() -> Result<()> {
     let mut keys: HashMap<String, DateTime<Utc>> = HashMap::new();
 
     for (key, value) in env::vars() {
-        if key.starts_with(&env_key_prefix) {
-            let trimmed_key = key
-                .strip_prefix(&env_key_prefix)
-                .map(str::to_lowercase)
-                .ok_or_else(|| {
-                    anyhow!("error processing key")
-                        .context(format!("environment variable {key} {value}"))
-                })?;
-
-            let rfc3339 = DateTime::parse_from_rfc3339(&value).map_err(|err| {
-                Error::msg(err).context(format!("environment variable {key} {value}"))
-            })?;
-            trace!("Watching {trimmed_key} with expiration {rfc3339}");
-
-            keys.insert(trimmed_key, rfc3339.into());
+        if !key.starts_with(&env_key_prefix) {
+            continue;
         }
+        let trimmed_key = key
+            .strip_prefix(&env_key_prefix)
+            .map(str::to_lowercase)
+            .ok_or_else(|| {
+                anyhow!("error processing key")
+                    .context(format!("environment variable {key} {value}"))
+            })?;
+
+        let rfc3339 = DateTime::parse_from_rfc3339(&value).map_err(|err| {
+            Error::msg(err).context(format!("environment variable {key} {value}"))
+        })?;
+        debug!("Watching {trimmed_key} with expiration {rfc3339}");
+
+        keys.insert(trimmed_key, rfc3339.into());
     }
 
-    let (shutdown_tx, mut shutdown_rx) = tokio::sync::broadcast::channel::<bool>(2);
-    let (rev_shutdown_tx, mut rev_shutdown_rx) = tokio::sync::broadcast::channel::<bool>(2);
+    let token = CancellationToken::new();
 
-    let loop_join_handler = tokio::spawn(async move {
-        let loop_rx = shutdown_rx.borrow_mut();
-        if let Err(err) = metric_loop(config, keys, loop_rx).await {
-            error!(cause = ?err, "metric_loop error");
-            rev_shutdown_tx.send(true).unwrap();
+    let loop_join_handler = tokio::spawn({
+        let token = token.clone();
+        async move {
+            if let Err(err) = metric_loop(config, keys, &token).await {
+                error!(cause = ?err, "metric_loop error");
+                token.cancel();
+            }
         }
     });
 
-    shutdown_signal(rev_shutdown_rx.borrow_mut()).await;
+    shutdown_signal(&token).await;
 
-    shutdown_tx.send(true)?;
+    token.cancel();
 
     loop_join_handler.await?;
 
     Ok(())
 }
 
-async fn shutdown_signal(rx: &mut Receiver<bool>) {
+async fn shutdown_signal(cancellation_token: &CancellationToken) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -95,7 +97,7 @@ async fn shutdown_signal(rx: &mut Receiver<bool>) {
     tokio::select! {
         _ = ctrl_c => {},
         _ = terminate => {},
-        _ = rx.recv() => {},
+        _ = cancellation_token.cancelled() => {},
     }
 
     info!("signal received, starting graceful shutdown");
